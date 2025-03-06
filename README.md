@@ -29,6 +29,8 @@ Description :
 
 Description :
 
+[Code](<Demo Code/KY-015_DHT11/KY-015_DHT11.ino>)
+
 [Links](https://www.az-delivery.de/nl/products/dht-11-temperatursensor-modul)
 
 ### MH-Z19C  
@@ -42,6 +44,8 @@ Description :
 <img src="Photos/mic.jpg" alt="MAX4466" width="200"> <img src="Photos/mic_2.jpg" alt="MAX4466" width="200">  
 
 Description :
+
+[Code](<Demo Code/MAX_4466/MAX_4466.ino>)
 
 [Links](https://www.distrelec.be/en/max4466-microphone-amplifier-5v-adafruit-1063/p/30091129)
 
@@ -67,13 +71,15 @@ Description :
 
 Description :
 
-[Links]()
+[No Link]()
 
 
 ### PPD42 sensor
 <img src="Photos/unkown.jpg" alt="DPK SU2AV-0" width="200"> <img src="Photos/unkown2.jpg" alt="DPK SU2AV-0" width="200">  
 
 Description :
+
+[Code](<Demo Code/PPD42/PPD42.ino>)
 
 [Links]()
 
