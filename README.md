@@ -70,7 +70,7 @@ Description :
 [Links]()
 
 
-### DPK SU2AV-0  
+### PPD42 sensor
 <img src="Photos/unkown.jpg" alt="DPK SU2AV-0" width="200"> <img src="Photos/unkown2.jpg" alt="DPK SU2AV-0" width="200">  
 
 Description :
