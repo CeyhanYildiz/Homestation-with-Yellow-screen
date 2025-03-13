@@ -40,7 +40,7 @@ Description :
 
 Description :
 
-[Code](<Demo Code/KY-015_DHT11/MH-Z19C.ino>) 
+[Code](<Demo Code/MH_Z19C/MH_Z19C.ino>) 
 
 [Links](https://www.tinytronics.nl/nl/sensoren/lucht/gas/winsen-mh-z19c-co2-sensor-met-kabel)
 
