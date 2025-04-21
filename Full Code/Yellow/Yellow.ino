@@ -75,16 +75,13 @@ void drawFrame(String name, float *value) {
 
 // --- Setup ---
 void setup() {
-  Serial.begin(115200);
+  // Serial.begin(115200);  // Removed for faster operation
 
   // Connect to Wi-Fi
   WiFi.begin(ssid, password);
-  Serial.print("Connecting to Wi-Fi");
   while (WiFi.status() != WL_CONNECTED) {
-    delay(1000);
-    Serial.print(".");
+    delay(500);
   }
-  Serial.println("Connected to Wi-Fi");
 
   // Init touchscreen SPI
   touchscreenSPI.begin(XPT2046_CLK, XPT2046_MISO, XPT2046_MOSI, XPT2046_CS);
@@ -113,7 +110,6 @@ void fetchSensorData() {
 
   if (httpCode > 0) {
     String payload = http.getString();
-    Serial.println("Received payload: " + payload);
 
     // Assuming the payload is in this format: {"sens1": 21.0, "sens2": 15.5, ...}
     // Parse the payload (you can use JSON parsing library for better handling)
@@ -121,21 +117,16 @@ void fetchSensorData() {
     sensValue[1] = payload.substring(payload.indexOf("sens2") + 7, payload.indexOf("sens2") + 11).toFloat();
     sensValue[2] = payload.substring(payload.indexOf("sens3") + 7, payload.indexOf("sens3") + 11).toFloat();
     sensValue[3] = payload.substring(payload.indexOf("sens4") + 7, payload.indexOf("sens4") + 11).toFloat();
-
-    Serial.println("Updated sensor values:");
-    Serial.println(sensValue[0]);
-    Serial.println(sensValue[1]);
-    Serial.println(sensValue[2]);
-    Serial.println(sensValue[3]);
-  } else {
-    Serial.println("Error fetching data");
   }
 
   http.end(); // Close the connection
 }
+unsigned long lastFetchTime = 0;  // Time tracker for fetch requests
+const unsigned long fetchInterval = 5000;  // 5 seconds interval between fetch requests
 
-// --- Main Loop ---
 void loop() {
+  unsigned long currentMillis = millis();  // Get the current time in milliseconds
+
   if (touchscreen.tirqTouched() && touchscreen.touched()) {
     TS_Point point = touchscreen.getPoint();
 
@@ -152,15 +143,15 @@ void loop() {
       if (sensCount == MAXSENSCOUNT) sensCount = 0;
     }
 
-    // Wait for release
-    while (touchscreen.tirqTouched() && touchscreen.touched()) {}
-
-    // Fetch new sensor data from ESP8266
-    fetchSensorData();
+    // Fetch new sensor data only if it's been enough time since the last fetch
+    if (currentMillis - lastFetchTime >= fetchInterval) {
+      fetchSensorData();
+      lastFetchTime = currentMillis;  // Update the last fetch time
+    }
 
     // Draw frame with updated sensor value
     drawFrame(names[sensCount], &sensValue[sensCount]);
   }
 
-  delay(2);  // light debounce
+  delay(50);  // Small delay to improve touchscreen detection response time
 }
