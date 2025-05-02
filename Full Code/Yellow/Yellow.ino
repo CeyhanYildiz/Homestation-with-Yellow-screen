@@ -20,8 +20,8 @@
 #define MAXSENSCOUNT 4
 
 // Wi-Fi credentials
-const char* ssid = "telenet-Ster";
-const char* password = "0485541209n";
+const char* ssid = "xxxxxxxxx";
+const char* password = "xxxxxxxxxx";
 const char* serverURL = "http://192.168.0.223/sensdata";  // Replace with your ESP8266's IP and the endpoint
 
 // Globals
