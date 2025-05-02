@@ -3,8 +3,8 @@
 #include <ESP8266WebServer.h>
 
 // WiFi credentials
-const char* ssid = "telenet-Ster";
-const char* password = "0485541209n";
+const char* ssid = "xxxxxxxxx";
+const char* password = "xxxxxxxxx";
 
 // UDP settings
 const char* udpIP = "192.168.1.77";  // target IP (optional)
