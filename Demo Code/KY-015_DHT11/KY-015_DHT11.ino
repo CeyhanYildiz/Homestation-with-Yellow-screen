@@ -2,14 +2,16 @@
 #include <DHT.h>
 #include <DHT_U.h>
 
-#define DHTPIN 3      // Use Digital Pin 3 (D3)
-#define DHTTYPE DHT11 // KY-015 uses DHT11 sensor
+#define DHTPIN D3      // D3 is GPIO0 on NodeMCU
+#define DHTTYPE DHT11  // We're using a DHT11 sensor
 
 DHT dht(DHTPIN, DHTTYPE);
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("DHT11 sensor test");
+  Serial.begin(115200); // ESP8266 prefers 115200 baud rate
+  Serial.println();
+  Serial.println("DHT11 sensor test (NodeMCU ESP8266)");
+
   dht.begin();
 }
 
@@ -28,5 +30,5 @@ void loop() {
   Serial.print(hum);
   Serial.println("%");
 
-  delay(2000);
+  delay(500);
 }
