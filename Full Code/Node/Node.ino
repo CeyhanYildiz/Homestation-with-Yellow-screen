@@ -1,50 +1,67 @@
 #include <ESP8266WiFi.h>
 #include <WiFiUDP.h>
 #include <ESP8266WebServer.h>
+#include <Adafruit_Sensor.h>
+#include <DHT.h>
+#include <DHT_U.h>
 
-// WiFi credentials
-const char* ssid = "telenet-Ster";
-const char* password = "0485541209n";
+// WiFi info
+const char* wifiName = "iPhone";
+const char* wifiPassword = "98764321";
 
-// UDP settings
-const char* udpIP = "192.168.1.77";  // target IP (optional)
-const int udpPort = 50000;
+// UDP settings (optional)
+const char* udpIP = "192.168.1.77";
+const int udpPort = 50006;
 
-// Sensor data
-float sens1 = 21.0f;
-float sens2 = 18.2f;
-float sens3 = 25.5f;
-float sens4 = 9.8f;
+// DHT Sensor setup
+#define DHTPIN D3      // D3 is GPIO0 on NodeMCU
+#define DHTTYPE DHT11
+DHT dht(DHTPIN, DHTTYPE);
 
-// Network objects
+// Networking
 WiFiUDP udp;
-ESP8266WebServer server(80);  // HTTP server on port 80
+ESP8266WebServer server(80);
+
+// Variables to hold sensor data
+float temperature = 0.0;
+float humidity = 0.0;
+
+// Sound sensor setup
+const int sampleWindow = 50; // Sample window width in mS (50 mS = 20Hz)
+const int AMP_PIN = A0;       // Preamp output pin connected to A0
+unsigned int sample;
+unsigned int peakToPeak = 0;
+
+// Timer for printing IP
+unsigned long lastPrintTime = 0;
+const unsigned long printInterval = 10000; // 10 seconds
 
 void setup() {
   Serial.begin(115200);
-  delay(1000);
-  Serial.println("\nConnecting to WiFi...");
+  delay(100);
 
-  WiFi.begin(ssid, password);
+  Serial.println();
+  Serial.println("Connecting to WiFi...");
+  WiFi.begin(wifiName, wifiPassword);
+
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
 
-  Serial.println("\nWiFi connected!");
-  Serial.print("IP Address: ");
-  Serial.println(WiFi.localIP());
+  Serial.println("\nConnected!");
+  Serial.println("IP address: " + WiFi.localIP().toString());
 
-  // Start UDP
   udp.begin(udpPort);
 
-  // Setup HTTP endpoint
+  dht.begin();
+
+  // Setup web server route
   server.on("/sensdata", HTTP_GET, []() {
     String json = "{";
-    json += "\"sens1\": " + String(sens1) + ",";
-    json += "\"sens2\": " + String(sens2) + ",";
-    json += "\"sens3\": " + String(sens3) + ",";
-    json += "\"sens4\": " + String(sens4);
+    json += "\"Temperature\":" + String(temperature, 1) + ",";
+    json += "\"Humidity\":" + String(humidity, 1) + ",";
+    json += "\"SoundLevel\":" + String(peakToPeak);
     json += "}";
     server.send(200, "application/json", json);
   });
@@ -54,32 +71,50 @@ void setup() {
 }
 
 void loop() {
-  // Send sensor data over UDP
-  sendUDP("Sens1: " + String(sens1)); delay(1000);
-  sendUDP("Sens2: " + String(sens2)); delay(1000);
-  sendUDP("Sens3: " + String(sens3)); delay(1000);
-  sendUDP("Sens4: " + String(sens4)); delay(1000);
+  // Read DHT sensor
+  float temp = dht.readTemperature();
+  float hum = dht.readHumidity();
 
-  // Check for incoming HTTP requests
-  server.handleClient();
-  receiveUDP();
-}
+  if (!isnan(temp) && !isnan(hum)) {
+    temperature = temp;
+    humidity = hum;
+  } else {
+    Serial.println("Failed to read from DHT sensor!");
+  }
 
-void sendUDP(String message) {
+  // Measure sound peak-to-peak
+  unsigned long startMillis = millis();
+  unsigned int signalMax = 0;
+  unsigned int signalMin = 1024;
+
+  while (millis() - startMillis < sampleWindow) {
+    sample = analogRead(AMP_PIN);
+    if (sample < 1024) {
+      if (sample > signalMax) {
+        signalMax = sample;
+      } else if (sample < signalMin) {
+        signalMin = sample;
+      }
+    }
+  }
+  peakToPeak = signalMax - signalMin;
+  //Serial.print("Sound Level (peakToPeak): ");
+  //Serial.println(peakToPeak);
+
+  // Optional: Send UDP packet
+  String message = "Temp: " + String(temperature) + " C, Hum: " + String(humidity) + " %, Sound: " + String(peakToPeak);
   udp.beginPacket(udpIP, udpPort);
   udp.print(message);
   udp.endPacket();
-  Serial.print("Sent: ");
-  Serial.println(message);
-}
 
-void receiveUDP() {
-  int packetSize = udp.parsePacket();
-  if (packetSize) {
-    char packetBuffer[packetSize + 1];
-    udp.read(packetBuffer, packetSize);
-    packetBuffer[packetSize] = 0;
-    Serial.print("Received: ");
-    Serial.println(packetBuffer);
+  // Handle web server
+  server.handleClient();
+
+  // Print IP every 10 seconds
+  if (millis() - lastPrintTime >= printInterval) {
+    Serial.println("Current IP: " + WiFi.localIP().toString());
+    lastPrintTime = millis();
   }
+
+  delay(2000); // Delay to match DHT sensor update speed
 }
