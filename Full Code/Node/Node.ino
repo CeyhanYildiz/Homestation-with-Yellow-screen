@@ -7,8 +7,8 @@
 
 
 // WiFi info
-const char* wifiName = "iPhone";
-const char* wifiPassword = "98764321";
+const char* wifiName = "MSI";
+const char* wifiPassword = "12345678";
 
 // UDP settings (optional)
 const char* udpIP = "192.168.1.77";
