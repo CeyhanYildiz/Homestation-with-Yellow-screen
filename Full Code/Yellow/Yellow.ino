@@ -23,6 +23,7 @@ const char* ssid = "iPhone";
 const char* password = "98764321";
 const char* serverURL = "http://192.168.0.223/sensdata";  // Replace with your ESP8266's IP and endpoint
 
+
 // Globals
 TFT_eSPI tft = TFT_eSPI();  // Uses config from User_Setup.h
 SPIClass touchscreenSPI = SPIClass(VSPI);

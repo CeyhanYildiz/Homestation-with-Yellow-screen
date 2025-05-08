@@ -5,6 +5,7 @@
 #include <DHT.h>
 #include <DHT_U.h>
 
+
 // WiFi info
 const char* wifiName = "iPhone";
 const char* wifiPassword = "98764321";
