@@ -7,8 +7,8 @@
 
 
 // WiFi info
-const char* wifiName = "POKO X5 5G";
-const char* wifiPassword = "12345678";
+const char* wifiName = "504F94A12106";
+const char* wifiPassword = "";
 
 // UDP settings (optional)
 const char* udpIP = "192.168.1.77";
