@@ -19,9 +19,9 @@
 #define DATA_FONT_SIZE 4
 
 // Wi-Fi credentials
-const char* ssid = "POKO X5 5G";
-const char* password = "12345678";
-const char* serverURL = "http://192.168.0.223/sensdata";  // Replace with your ESP8266's IP and endpoint
+const char* ssid = "504F94A12106";
+const char* password = "";
+const char* serverURL = "http://192.168.1.120/sensdata";  // Replace with your ESP8266's IP and endpoint
 
 
 // Globals
