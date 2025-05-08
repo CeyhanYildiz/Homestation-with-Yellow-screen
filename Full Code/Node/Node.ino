@@ -7,7 +7,7 @@
 
 
 // WiFi info
-const char* wifiName = "MSI";
+const char* wifiName = "POKO X5 5G";
 const char* wifiPassword = "12345678";
 
 // UDP settings (optional)
