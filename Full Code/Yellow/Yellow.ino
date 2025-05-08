@@ -17,12 +17,11 @@
 #define SCREEN_HEIGHT 240
 #define GENERAL_FONT_SIZE 2
 #define DATA_FONT_SIZE 4
-#define MAXSENSCOUNT 4
 
 // Wi-Fi credentials
-const char* ssid = "telenet-Ster";
-const char* password = "0485541209n";
-const char* serverURL = "http://192.168.0.223/sensdata";  // Replace with your ESP8266's IP and the endpoint
+const char* ssid = "iPhone";
+const char* password = "98764321";
+const char* serverURL = "http://192.168.0.223/sensdata";  // Replace with your ESP8266's IP and endpoint
 
 // Globals
 TFT_eSPI tft = TFT_eSPI();  // Uses config from User_Setup.h
@@ -30,9 +29,12 @@ SPIClass touchscreenSPI = SPIClass(VSPI);
 XPT2046_Touchscreen touchscreen(XPT2046_CS, XPT2046_IRQ);
 
 // Sensor Data
-int sensCount = 0;
-String names[MAXSENSCOUNT] = { "sens1", "sens2", "sens3", "sens4" };
-float sensValue[MAXSENSCOUNT] = { 0.0f, 0.0f, 0.0f, 0.0f };
+float temperature = 0.0f;
+float humidity = 0.0f;
+unsigned int soundLevel = 0;  // New: peakToPeak mic data
+
+// Page Navigation
+int currentPage = 0;  // 0 = DHT11, 1 = MAX4466
 
 // --- UI Drawing Functions ---
 void drawBackground() {
@@ -41,43 +43,42 @@ void drawBackground() {
   tft.drawLine(0, 30, SCREEN_WIDTH, 30, TFT_LIGHTGREY);
 }
 
-void drawFrame(String name, float *value) {
+void drawDHT11Page() {
   drawBackground();
 
-  // Title
   tft.setTextColor(TFT_BLACK);
   tft.setTextSize(GENERAL_FONT_SIZE);
-  tft.drawString(name, 31, 6);
+  tft.drawString("KY-015_DHT11", 31, 6);
   tft.setTextColor(TFT_LIGHTGREY);
-  tft.drawString(name, 30, 5);
+  tft.drawString("KY-015_DHT11", 30, 5);
 
-  if (value != nullptr) {
-    // Green light for valid data
-    tft.fillCircle(300, 15, 6, TFT_GREEN);
+  tft.fillCircle(300, 15, 6, TFT_GREEN);
 
-    // Draw value
-    tft.setTextColor(TFT_BLACK);
-    tft.setTextSize(DATA_FONT_SIZE);
-    tft.drawFloat(*value, 1, 60, 100);  // 1 decimal place
-    tft.setTextColor(TFT_LIGHTGREY);
-    tft.drawFloat(*value, 1, 59, 99);
-  } else {
-    // Red light for no data
-    tft.fillCircle(300, 15, 6, TFT_RED);
+  tft.setTextColor(TFT_BLACK);
+  tft.setTextSize(DATA_FONT_SIZE);
+  tft.drawString("Temp: " + String(temperature, 1) + " C", 30, 60);
+  tft.drawString("Hum: " + String(humidity, 1) + " %", 30, 120);
+}
 
-    tft.setTextColor(TFT_BLACK);
-    tft.setTextSize(DATA_FONT_SIZE);
-    tft.drawString("no data", 60, 100);
-    tft.setTextColor(TFT_LIGHTGREY);
-    tft.drawString("no data", 59, 99);
-  }
+void drawMAX4466Page() {
+  drawBackground();
+
+  tft.setTextColor(TFT_BLACK);
+  tft.setTextSize(GENERAL_FONT_SIZE);
+  tft.drawString("MAX_4466", 31, 6);
+  tft.setTextColor(TFT_LIGHTGREY);
+  tft.drawString("MAX_4466", 30, 5);
+
+  tft.fillCircle(300, 15, 6, TFT_GREEN);
+
+  tft.setTextColor(TFT_BLACK);
+  tft.setTextSize(DATA_FONT_SIZE);
+  tft.drawString("Sound:", 30, 80);
+  tft.drawString(String(soundLevel) + " units", 30, 140);
 }
 
 // --- Setup ---
 void setup() {
-  // Serial.begin(115200);  // Removed for faster operation
-
-  // Connect to Wi-Fi
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
@@ -98,7 +99,6 @@ void setup() {
   tft.println("Touch screen to begin...");
 
   delay(1500);
-  drawFrame(names[sensCount], &sensValue[sensCount]);
 }
 
 // --- Fetch Sensor Data from ESP8266 ---
@@ -111,21 +111,28 @@ void fetchSensorData() {
   if (httpCode > 0) {
     String payload = http.getString();
 
-    // Assuming the payload is in this format: {"sens1": 21.0, "sens2": 15.5, ...}
-    // Parse the payload (you can use JSON parsing library for better handling)
-    sensValue[0] = payload.substring(payload.indexOf("sens1") + 7, payload.indexOf("sens1") + 11).toFloat();
-    sensValue[1] = payload.substring(payload.indexOf("sens2") + 7, payload.indexOf("sens2") + 11).toFloat();
-    sensValue[2] = payload.substring(payload.indexOf("sens3") + 7, payload.indexOf("sens3") + 11).toFloat();
-    sensValue[3] = payload.substring(payload.indexOf("sens4") + 7, payload.indexOf("sens4") + 11).toFloat();
+    // Parse the JSON data
+    int tempStart = payload.indexOf("\"Temperature\":") + 14;
+    int tempEnd = payload.indexOf(",", tempStart);
+    temperature = payload.substring(tempStart, tempEnd).toFloat();
+
+    int humStart = payload.indexOf("\"Humidity\":") + 11;
+    int humEnd = payload.indexOf(",", humStart);  // CHANGED: because we now have 3 fields
+    humidity = payload.substring(humStart, humEnd).toFloat();
+
+    int soundStart = payload.indexOf("\"SoundLevel\":") + 13;
+    int soundEnd = payload.indexOf("}", soundStart);
+    soundLevel = payload.substring(soundStart, soundEnd).toInt();
   }
 
-  http.end(); // Close the connection
+  http.end();
 }
-unsigned long lastFetchTime = 0;  // Time tracker for fetch requests
+
+unsigned long lastFetchTime = 0;
 const unsigned long fetchInterval = 5000;  // 5 seconds interval between fetch requests
 
 void loop() {
-  unsigned long currentMillis = millis();  // Get the current time in milliseconds
+  unsigned long currentMillis = millis();
 
   if (touchscreen.tirqTouched() && touchscreen.touched()) {
     TS_Point point = touchscreen.getPoint();
@@ -134,24 +141,27 @@ void loop() {
     int x = map(point.x, 200, 3700, 1, SCREEN_WIDTH);
     int y = map(point.y, 240, 3800, 1, SCREEN_HEIGHT);
 
-    // Navigate sensor list
+    // Switch pages if screen touched
     if (y > SCREEN_HEIGHT / 2) {
-      --sensCount;
-      if (sensCount < 0) sensCount = MAXSENSCOUNT - 1;
-    } else {
-      ++sensCount;
-      if (sensCount == MAXSENSCOUNT) sensCount = 0;
+      currentPage = (currentPage + 1) % 2;  // Only 2 pages (0 and 1)
+    }
+    else {
+      currentPage = (currentPage + 1) % 2;
     }
 
-    // Fetch new sensor data only if it's been enough time since the last fetch
+    // Fetch new sensor data if enough time passed
     if (currentMillis - lastFetchTime >= fetchInterval) {
       fetchSensorData();
-      lastFetchTime = currentMillis;  // Update the last fetch time
+      lastFetchTime = currentMillis;
     }
 
-    // Draw frame with updated sensor value
-    drawFrame(names[sensCount], &sensValue[sensCount]);
+    // Draw the correct page
+    if (currentPage == 0) {
+      drawDHT11Page();
+    } else if (currentPage == 1) {
+      drawMAX4466Page();
+    }
   }
 
-  delay(50);  // Small delay to improve touchscreen detection response time
+  delay(50);  // Small delay for touch responsiveness
 }
