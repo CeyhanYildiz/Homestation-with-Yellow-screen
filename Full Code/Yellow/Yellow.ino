@@ -19,8 +19,8 @@
 #define DATA_FONT_SIZE 4
 
 // Wi-Fi credentials
-const char* ssid = "iPhone";
-const char* password = "98764321";
+const char* ssid = "MSI";
+const char* password = "12345678";
 const char* serverURL = "http://192.168.0.223/sensdata";  // Replace with your ESP8266's IP and endpoint
 
 
