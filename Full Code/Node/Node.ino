@@ -1,69 +1,76 @@
+#include <Wire.h>
 #include <ESP8266WiFi.h>
 #include <WiFiUDP.h>
 #include <ESP8266WebServer.h>
 #include <Adafruit_Sensor.h>
 #include <DHT.h>
 #include <DHT_U.h>
+#include <SoftwareSerial.h> // For debugging if needed (not used here since ESP8266 has one hardware serial)
 
+#define AMBIMATE_I2C_ADDR  0x2A  // I2C address of the AmbiMate sensor
+#define SCAN_REGISTER      0xC0  // Register to initiate data scan
+#define SCAN_FULL_SET      0xFF  // Value to scan all sensor registers
 
-// WiFi info
-const char* wifiName = "504F94A12106";
-const char* wifiPassword = "";
+// WiFi credentials
+const char* WIFI_SSID = "telenet-Ster";
+const char* WIFI_PASSWORD = "0485541209n";
 
-// UDP settings (optional)
-const char* udpIP = "192.168.1.77";
-const int udpPort = 50006;
+// UDP target
+const char* UDP_IP = "192.168.1.77";
+const int UDP_PORT = 50006;
 
-// DHT Sensor setup
-#define DHTPIN D3      // D3 is GPIO0 on NodeMCU
-#define DHTTYPE DHT11
-DHT dht(DHTPIN, DHTTYPE);
+// DHT sensor setup
+#define DHT_PIN D3
+#define DHT_TYPE DHT11
+DHT dht(DHT_PIN, DHT_TYPE);
+
+// Sound sensor setup
+const int AMP_PIN = A0;
+const int SAMPLE_WINDOW = 50; // milliseconds
 
 // Networking
 WiFiUDP udp;
 ESP8266WebServer server(80);
 
-// Variables to hold sensor data
+// Sensor data variables
 float temperature = 0.0;
 float humidity = 0.0;
+unsigned int soundLevel = 0;
 
-// Sound sensor setup
-const int sampleWindow = 50; // Sample window width in mS (50 mS = 20Hz)
-const int AMP_PIN = A0;       // Preamp output pin connected to A0
-unsigned int sample;
-unsigned int peakToPeak = 0;
-
-// Timer for printing IP
+// Timer for IP logging
 unsigned long lastPrintTime = 0;
-const unsigned long printInterval = 10000; // 10 seconds
+const unsigned long PRINT_INTERVAL = 10000;
 
 void setup() {
+  // Serial communication
   Serial.begin(115200);
   delay(100);
 
-  Serial.println();
+  // WiFi setup
   Serial.println("Connecting to WiFi...");
-  WiFi.begin(wifiName, wifiPassword);
-
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-
   Serial.println("\nConnected!");
   Serial.println("IP address: " + WiFi.localIP().toString());
 
-  udp.begin(udpPort);
-
+  udp.begin(UDP_PORT);
   dht.begin();
 
-  // Setup web server route
+  // AmbiMate sensor initialization
+  Wire.begin();
+  Serial.println("AmbiMate MS4 Sensor Initialization...");
+
+  // Web server endpoint for sensor data
   server.on("/sensdata", HTTP_GET, []() {
     String json = "{";
     json += "\"Temperature\":" + String(temperature, 1) + ",";
     json += "\"Humidity\":" + String(humidity, 1) + ",";
-    json += "\"SoundLevel\":" + String(peakToPeak);
-    json += "}";
+    json += "\"SoundLevel\":" + String(soundLevel) + ",";
+    json += "\"AmbiMateTemperature\":" + String(getAmbiMateTemperature(), 1) + ",";
+    json += "\"AmbiMateHumidity\":" + String(getAmbiMateHumidity(), 1) + "}";
     server.send(200, "application/json", json);
   });
 
@@ -72,50 +79,117 @@ void setup() {
 }
 
 void loop() {
-  // Read DHT sensor
+  readTemperatureHumidity();
+  readSoundLevel();
+  sendUDPMessage();
+  server.handleClient();
+
+  if (millis() - lastPrintTime >= PRINT_INTERVAL) {
+    Serial.println("Current IP: " + WiFi.localIP().toString());
+    lastPrintTime = millis();
+  }
+
+  delay(2000);
+}
+
+// Read temperature and humidity from DHT11
+void readTemperatureHumidity() {
   float temp = dht.readTemperature();
   float hum = dht.readHumidity();
 
   if (!isnan(temp) && !isnan(hum)) {
     temperature = temp;
     humidity = hum;
-  } else {
-    Serial.println("Failed to read from DHT sensor!");
   }
+}
 
-  // Measure sound peak-to-peak
+// Read sound level from analog pin
+void readSoundLevel() {
   unsigned long startMillis = millis();
   unsigned int signalMax = 0;
   unsigned int signalMin = 1024;
 
-  while (millis() - startMillis < sampleWindow) {
-    sample = analogRead(AMP_PIN);
+  while (millis() - startMillis < SAMPLE_WINDOW) {
+    unsigned int sample = analogRead(AMP_PIN);
     if (sample < 1024) {
-      if (sample > signalMax) {
-        signalMax = sample;
-      } else if (sample < signalMin) {
-        signalMin = sample;
-      }
+      if (sample > signalMax) signalMax = sample;
+      if (sample < signalMin) signalMin = sample;
     }
   }
-  peakToPeak = signalMax - signalMin;
-  //Serial.print("Sound Level (peakToPeak): ");
-  //Serial.println(peakToPeak);
 
-  // Optional: Send UDP packet
-  String message = "Temp: " + String(temperature) + " C, Hum: " + String(humidity) + " %, Sound: " + String(peakToPeak);
-  udp.beginPacket(udpIP, udpPort);
+  soundLevel = signalMax - signalMin;
+}
+
+// Send a UDP message with current sensor values including AmbiMate data
+void sendUDPMessage() {
+  float ambiTemp = getAmbiMateTemperature();
+  float ambiHum = getAmbiMateHumidity();
+
+  String message = "Temp: " + String(temperature) + " C, "
+                 + "Hum: " + String(humidity) + " %, "
+                 + "Sound: " + String(soundLevel) + ", "
+                 + "AmbiMate Temp: " + String(ambiTemp) + " C, "
+                 + "AmbiMate Hum: " + String(ambiHum) + " %";
+
+  udp.beginPacket(UDP_IP, UDP_PORT);
   udp.print(message);
   udp.endPacket();
+}
 
-  // Handle web server
-  server.handleClient();
+// Function to get AmbiMate temperature
+float getAmbiMateTemperature() {
+  Wire.beginTransmission(AMBIMATE_I2C_ADDR);
+  Wire.write(SCAN_REGISTER);
+  Wire.write(SCAN_FULL_SET);
+  Wire.endTransmission();
+  
+  delay(500); // Wait for sensor to update
 
-  // Print IP every 10 seconds
-  if (millis() - lastPrintTime >= printInterval) {
-    Serial.println("Current IP: " + WiFi.localIP().toString());
-    lastPrintTime = millis();
+  // Read sensor data from registers (0x00 - 0x0E)
+  Wire.beginTransmission(AMBIMATE_I2C_ADDR);
+  Wire.write(0x00);  // Start reading from register 0x00
+  Wire.endTransmission();
+  Wire.requestFrom(AMBIMATE_I2C_ADDR, 15);  // Read 15 bytes of sensor data
+
+  if (Wire.available() < 15) {
+    Serial.println("Error: Not enough data received.");
+    return 0.0;
   }
 
-  delay(2000); // Delay to match DHT sensor update speed
+  uint8_t data[15];
+  for (int i = 0; i < 15; i++) {
+    data[i] = Wire.read();
+  }
+
+  // Extract AmbiMate temperature
+  return ((data[1] << 8) | data[0]) / 10.0;  // Temperature in °C
+}
+
+// Function to get AmbiMate humidity
+float getAmbiMateHumidity() {
+  Wire.beginTransmission(AMBIMATE_I2C_ADDR);
+  Wire.write(SCAN_REGISTER);
+  Wire.write(SCAN_FULL_SET);
+  Wire.endTransmission();
+  
+  delay(500); // Wait for sensor to update
+
+  // Read sensor data from registers (0x00 - 0x0E)
+  Wire.beginTransmission(AMBIMATE_I2C_ADDR);
+  Wire.write(0x00);  // Start reading from register 0x00
+  Wire.endTransmission();
+  Wire.requestFrom(AMBIMATE_I2C_ADDR, 15);  // Read 15 bytes of sensor data
+
+  if (Wire.available() < 15) {
+    Serial.println("Error: Not enough data received.");
+    return 0.0;
+  }
+
+  uint8_t data[15];
+  for (int i = 0; i < 15; i++) {
+    data[i] = Wire.read();
+  }
+
+  // Extract AmbiMate humidity
+  return ((data[3] << 8) | data[2]) / 10.0;     // Humidity in %
 }
