@@ -37,7 +37,7 @@ Basic temperature and humidity sensor that can be controlled using certain libra
 
 <img src="Photos/KY-015 DHT11_1.jpg" alt="KY-015 DHT11" width="200">  
 
-[Code](<Demo Code/KY-015_DHT11/KY-015_DHT11.ino>) | [Links](https://www.az-delivery.de/nl/products/dht-11-temperatursensor-modul)
+[Code](<Demo Code/KY-015_DHT11/KY-015_DHT11.ino>) | [Links](https://www.az-delivery.de/nl/products/dht-11-temperatursensor-modul) | [extra documentation](./Demo%20Code/KY-015_DHT11/KY-015_DHT11.md)
 
 
 ---
@@ -55,7 +55,7 @@ Analog read based sensor that returns the volume present
 
 <img src="Photos/mic.jpg" alt="MAX4466" width="200"> <img src="Photos/mic_2.jpg" alt="MAX4466" width="200">  
 
-[Code](<Demo Code/MAX_4466/MAX_4466.ino>) | [Links](https://www.distrelec.be/en/max4466-microphone-amplifier-5v-adafruit-1063/p/30091129)
+[Code](<Demo Code/MAX_4466/MAX_4466.ino>) | [Links](https://www.distrelec.be/en/max4466-microphone-amplifier-5v-adafruit-1063/p/30091129) | [extra documentation](./Demo%20Code/MAX_4466/MAX_4466.md)
 
 
 ---
@@ -82,7 +82,7 @@ Sensor module for multiple air condition related values, uses i2c communication
 
 <img src="Photos/Stm-5_1.jpg" alt="STM-5" width="200"> <img src="Photos/Stm-5_2.jpg" alt="STM-5" width="200"> <img src="Photos/Stm-5_3.jpg" alt="STM-5" width="200">  
 
-[Code](<Demo Code/STM-5/STM-5.ino>)
+[Code](<Demo Code/STM-5/STM-5.ino>) | [extra documentation](./Demo%20Code/STM-5/STM-5.md)
 
 
 ---
@@ -91,7 +91,7 @@ Sensor to detect polution within the air, pulse triggered interrupt sensor
 
 <img src="Photos/unkown.jpg" alt="DPK SU2AV-0" width="200"> <img src="Photos/unkown2.jpg" alt="DPK SU2AV-0" width="200">  
 
-[Code](<Demo Code/PPD42/PPD42.ino>)
+[Code](<Demo Code/PPD42/PPD42.ino>) | [extra documentation](./Demo%20Code/PPD42/ppd42.md)
 
 
 ---
@@ -107,3 +107,11 @@ Esp32 with a build in tft display. main display of the project
 <img src="Photos/schema elektronsiche systemen yellow display.jpg" alt="scschema elektronsiche systemen yellow displayhem" width="500">
 
 Above is a general discription how the electronics are all connected together where black are the main components and red the sensors. Blue and green are the dedicated communication lines between the sensors and components
+
+In the current design the wifi module and the arduino nano have been replaced by a esp8266. Also there are only 4 sensor being used.
+ - [ky-015_dht11](./Demo%20Code/KY-015_DHT11/KY-015_DHT11.md)
+ - [max_4466](./Demo%20Code/MAX_4466/MAX_4466.md)
+ - [ppd42](./Demo%20Code/PPD42/ppd42.md)
+ - [stm-5](./Demo%20Code/STM-5/STM-5.md)
+
+
