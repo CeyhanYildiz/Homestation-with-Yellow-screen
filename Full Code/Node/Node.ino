@@ -42,6 +42,7 @@ float dustConcentration = 0;
 float ambiTemp = 0.0, ambiHumidity = 0.0, ambiBatteryVoltage = 0.0;
 uint16_t ambiLight = 0, ambiCO2 = 0, ambiVOC = 0;
 uint8_t ambiAudio = 0;
+int co2 = 0;
 
 // === Networking ===
 WiFiUDP udp;
@@ -65,8 +66,13 @@ void IRAM_ATTR pulseISR() {
   }
 }
 
+void sendCommand(byte cmd[], int len);
+bool readResponse(byte response[], int len);
+int parseCO2(byte response[]);
+
 void setup() {
   Serial.begin(115200);
+  Serial2.begin(9600); //co2 sensor
   delay(100);
   Wire.begin();
 
@@ -158,12 +164,27 @@ void loop() {
     ambiBatteryVoltage = ((data[14] << 8) | data[13]) / 1024.0 * (3.3 / 0.330);
   }
 
+  byte cmdReadCO2[] = {0xFF, 0x01, 0x86, 0x00, 0x00, 0x00, 0x00, 0x00, 0x79};
+  byte response[9];
+
+  sendCommand(cmdReadCO2, 9);
+
+  if (readResponse(response, 9)) {
+      co2 = parseCO2(response);
+      
+      Serial.print("CO2 Concentration: ");
+      Serial.print(co2);
+      Serial.println(" ppm");
+  } else {
+      Serial.println("Failed to read CO2 data");
+  }
+
   // === UDP Send ===
   String message = "Temp: " + String(temperature) + " C, Hum: " + String(humidity) +
                    " %, Sound: " + String(peakToPeak) + ", Dust: " + String(dustConcentration, 2) +
                    ", AmbiTemp: " + String(ambiTemp) + " C, AmbiHum: " + String(ambiHumidity) +
                    " %, Light: " + String(ambiLight) + " Lux, Audio: " + String(ambiAudio) +
-                   " dB, CO2: " + String(ambiCO2) + " PPM, VOC: " + String(ambiVOC) +
+                   " dB, CO2: " + String( ( ambiCO2 + co2 ) / 2 ) + " PPM, VOC: " + String(ambiVOC) +
                    " PPB, Battery: " + String(ambiBatteryVoltage, 2) + " V";
   udp.beginPacket(udpIP, udpPort);
   udp.print(message);
@@ -177,4 +198,30 @@ void loop() {
   }
 
   delay(1000);
+}
+
+void sendCommand(byte cmd[], int len) {
+    Serial2.write(cmd, len);
+}
+
+bool readResponse(byte response[], int len) {
+    unsigned long startTime = millis();
+    while (Serial2.available() < len) {
+        if (millis() - startTime > 1000) {
+            return false;  // Timeout
+        }
+    }
+    for (int i = 0; i < len; i++) {
+        response[i] = Serial2.read();
+    }
+    return true;
+}
+
+int parseCO2(byte response[]) {
+    if (response[0] != 0xFF || response[1] != 0x86) {
+        return -1;  // Invalid response
+    }
+    int high = response[2];
+    int low = response[3];
+    return (high << 8) + low;
 }
