@@ -7,8 +7,8 @@
 #include <DHT_U.h>
 
 // === WiFi credentials ===
-const char* wifiName = "telenet-Ster";
-const char* wifiPassword = "0485541209n";
+const char* wifiName = "xxxxxxxxxx";
+const char* wifiPassword = "xxxxxxxxxx";
 
 // === UDP settings ===
 const char* udpIP = "192.168.1.77";
