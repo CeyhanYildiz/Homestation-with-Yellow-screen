@@ -119,3 +119,9 @@ here are also the link's towards the documentation about the main home screen an
  - [node](./Full%20Code/Node/node.md)
  - [homescreen](./Full%20Code/Yellow/homescreen.md)
 
+## conclusie
+
+Ondanks dat het project uiteindelijk minder sensoren bevat dan we intensioneel voorzien hadden. Is het tot een degelijk resultaat gekomen, de sensor data wordt van alle sensoren goed uitgelezen en doorgestuurd naar de loxone server, vervolgens kan het homescreen de data opvragen en bijgevolg op het scherm afbeelden.
+
+Er waren enkele problemen met het uitlezen van de sensoren over uart, aangezien de standard uart van de esp82 wordt gebruikt voor serial communication met de pc. Maar ondanks deze kleine tegenslag hebben we alles aan de praat gekregen.
+
