@@ -10,8 +10,8 @@
 #define DATA_FONT_SIZE 4
 
 // Wi-Fi credentials
-const char* ssid = "telenet-Ster";
-const char* password = "0485541209n";
+const char* ssid = "xxxxxxxxx";
+const char* password = "xxxxxxxxx";
 const char* serverURL = "http://192.168.0.223/sensdata";  // Update IP if needed
 
 // Globals
