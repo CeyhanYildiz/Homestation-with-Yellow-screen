@@ -100,7 +100,7 @@ Esp32 with a build in tft display. main display of the project
 
 <img src="Photos/YellowScreen1.jpg" alt="ESP32-2432S028" width="200"> <img src="Photos/YellowScreen2.jpg" alt="ESP32-2432S028" width="200">  
 
-[Code](<Demo Code/homescreen/homescreen.ino>) | [Links](https://randomnerdtutorials.com/esp32-cheap-yellow-display-cyd-pinout-esp32-2432s028r/#:~:text=The%20ESP32%20Cheap%20Yellow%20Display%20(ESP32%2D2432S028R)%20is%20a,interfaces%20for%20your%20IoT%20projects.)
+[Code](<Demo Code/yellowscreen/homescreen/homescreen.ino>) | [Links](https://randomnerdtutorials.com/esp32-cheap-yellow-display-cyd-pinout-esp32-2432s028r/#:~:text=The%20ESP32%20Cheap%20Yellow%20Display%20(ESP32%2D2432S028R)%20is%20a,interfaces%20for%20your%20IoT%20projects.)
 
 ## main circuit
 
@@ -108,10 +108,14 @@ Esp32 with a build in tft display. main display of the project
 
 Above is a general discription how the electronics are all connected together where black are the main components and red the sensors. Blue and green are the dedicated communication lines between the sensors and components
 
-In the current design the wifi module and the arduino nano have been replaced by a esp8266. Also there are only 4 sensor being used.
+In the current design the wifi module and the arduino nano have been replaced by a esp8266.
  - [ky-015_dht11](./Demo%20Code/KY-015_DHT11/KY-015_DHT11.md)
  - [max_4466](./Demo%20Code/MAX_4466/MAX_4466.md)
  - [ppd42](./Demo%20Code/PPD42/ppd42.md)
  - [stm-5](./Demo%20Code/STM-5/STM-5.md)
+ - [mh_z19c](./Demo%20Code/MH_Z19C/mh_z19c.md)
 
+here are also the link's towards the documentation about the main home screen and node module:
+ - [node](./Full%20Code/Node/node.md)
+ - [homescreen](./Full%20Code/Yellow/homescreen.md)
 
